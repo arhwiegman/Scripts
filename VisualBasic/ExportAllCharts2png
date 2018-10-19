@@ -1,0 +1,8 @@
+Dim ws As Worksheet
+Dim co As ChartObject
+For Each ws In ActiveWorkbook.Worksheets
+    For Each co In ss.ChartObjects
+        
+    Next
+Next
+End Sub
