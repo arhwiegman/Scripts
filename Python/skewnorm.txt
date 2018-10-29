@@ -1,0 +1,45 @@
+# skewedNormalSample ------------------------------------------------
+def skewedNormalSample(n=100,F=None,skew=0,mean=0,sdev=1):
+  from scipy.stats import skewnorm
+  # probability density function
+  if F == None:
+  	F = skewnorm(a=skew,loc=mean,scale=sdev)
+  # random variate sample
+  S = F.rvs(size=n)
+  return(S)
+  
+  
+# fitSkewedNormalObject ---------------------------------------------
+def fitSkewedNormalObject(data=None):
+  if data==None: 
+    data=[1,1,2,3,4,5,5,5,6,7,8,9,10,10,10,10,0,8,6,15,10,23,12,45,50]
+  skew = ss.skew(data)
+  mean = ss.tmean(data)
+  sdev = ss.tstd(data)
+  print("skew=",skew,"\nmean=",mean,"\nsdev=",sdev)
+  from scipy.stats import skewnorm
+  F = skewnorm(a=skew,loc=mean,scale=sdev)
+  return(F)
+
+# plotSkewedDistribution ---------------------------------------------
+def plotSkewedDistribution(data=None,n=None):
+  import scipy.stats as ss
+  from ss import skewnorm
+  import numpy as np
+  from matplotlib import pyplot as plt
+  if n == None: n=100
+  if data==None: 
+    data=[1,1,2,3,4,5,5,5,6,7,8,9,10,10,10,10,0,8,6,15,10,23,12,45,50]
+  skew = ss.skew(data)
+  mean = ss.tmean(data)
+  sdev = ss.tstd(data)
+  F = skewnorm(a=skew,loc=mean,scale=sdev)
+  # create 100 evenly spaced x values within range
+  x = np.linspace(F.ppf(0.01),F.ppf(0.99), n)
+  #Create a figure to plot data
+  fig, ax = plt.subplots(1, 1)
+  ax.plot(x, F.pdf(x), 'k-', lw=2, label='pobability density function')
+  ax.hist(F.rvs(n), density=True, histtype='stepfilled', alpha=0.2, label="randomly generated data n="+str(n))
+  ax.hist(F.rvs(n), density=True, histtype='stepfilled', alpha=0.2, label="observed data n="+len(data))
+  ax.legend(loc='best', frameon=False)
+  plt.show()

@@ -1,4 +1,3 @@
-Attribute VB_Name = "Module3"
 'Export each chart object as .png file in a folder called figures
 '   use alt+F11 to open visual basic editor
 '   select insert -> module and copy this script into the module text box
@@ -8,6 +7,7 @@ Attribute VB_Name = "Module3"
 '------------------------------
 
 Public Sub ExportALLCharts()
+    ActiveWorkbook.Save
     Dim outFldr As String
     Dim Ws As Worksheet
     Dim co As ChartObject
@@ -27,8 +27,9 @@ Public Sub ExportALLCharts()
         x = 1
         For Each co In Ws.ChartObjects
             'export png
-            co.Chart.Export outFldr & "\xlsx_figure_" & Ws.Name & x & ".png", "PNG"
+            'co.Chart.Export outFldr & "\xlsx_figure_" & Ws.Name & x & ".png", "PNG"
             'export pdf
+            co.Activate
             co.Chart.ExportAsFixedFormat Type:=xlTypePDF, Filename:=outFldr & "\xlsx_figure_" & Ws.Name & x & ".pdf"
             x = x + 1
         Next co
