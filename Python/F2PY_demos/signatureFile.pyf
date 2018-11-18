@@ -1,0 +1,15 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module moduleName ! in 
+    interface  ! in :moduleName
+        subroutine my_function(x,y,z) ! in :moduleName:frt.f95
+            real dimension(:),intent(in) :: x
+            real dimension(:),intent(in) :: y
+            real dimension(size(x)),intent(out),depend(x) :: z
+        end subroutine my_function
+    end interface 
+end python module moduleName
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

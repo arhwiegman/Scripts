@@ -1,0 +1,87 @@
+---
+title: "Beamer Presentation - HW3 BIO 381"
+author: "Adrian Wiegman"
+date: "February 3, 2018"
+output: 
+  beamer_presentation: 
+    colortheme: seahorse
+    fonttheme: professionalfonts
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Primary objective of the Presentation
+
+- demonstrate use of sequential and simultaneous bullet points
+- use colored text
+- use an image 
+- use an image with a caption
+- use an image with an overlayed caption
+
+## Secondary objective of the presentation
+
+- talk about my what I had for breakfast!
+
+## Ingredients of my breakfast 
+
+>- \color{yellow} eggs
+>- \color{magenta} ham
+>- \color{green} green dye
+>- \color{black} butter
+
+## An equation for the weight I gained after eating my breakfast
+
+$Q = k(E*n_E + GD + H*n_H + B)$
+
+
+- *Q* is the mass of my breakfast (g)
+- *E* the mass of on large chicken egg (g)
+- *n~i~* is the number of i^th^ ingredient  
+- *GD* is the mass of green dye added to the egg yolk prior to frying
+- *H* the mass of a standard 1 cm thick slice of ham shank with a diameter of 15cm (g)
+- *B* the mass of butter added to greese the pan 
+- *k* k~ce~ is the moisture loss coefficient (g g^-1^) to heat all ingredients in a frying pan from 5^o^C to a mean tempurature of 70^o^C
+
+## An R vector of what I had for breakfast
+
+```{r cars, echo = TRUE}
+ingredients<- c('greenDye','eggs','ham','butter')
+mass <- c(0.05,70,50,5)
+names(mass) <- ingredients
+k <- 0.8 #moisture loss from cooking
+n <- c(1,1,2,1) #number of each ingredient
+names(n) <- ingredients
+Q <-sum(n*k*(mass)) #mass of my breakfast
+print(Q)
+```
+
+## A picture of what I had for breakfast
+ \begin{picture}(320,250)
+ \put(85,75){\includegraphics[height=6cm]
+ {samiam.jpg}}
+ \put(00,60){\begin{minipage}[t]{1\linewidth}
+ \end{minipage}}
+ \end{picture}
+
+## A picture of what I had for breakfast with an overlaid caption
+\begin{picture}(320,250)
+ \put(85,75){\includegraphics[height=6cm]
+ {samiam.jpg}}
+ \put(105,95){\begin{minipage}[t]{1\linewidth} 
+sam i am -->
+ \end{minipage}}
+ \end{picture}
+
+## A properly annotated picture of what I had for breakfast
+\begin{picture}(320,250)
+ \put(85,75){\includegraphics[height=6cm]
+ {samiam.jpg}}
+ \put(00,60){\begin{minipage}[t]{1\linewidth}
+ green eggs and ham
+ 
+{\color{blue}(source: http://www.drseussart.com/illustration-art/green-eggs-and-ham-50th-anniversary-print)}%% caption
+ \end{minipage}}
+ \end{picture}
+

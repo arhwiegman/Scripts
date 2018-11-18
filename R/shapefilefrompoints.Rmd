@@ -1,0 +1,43 @@
+---
+title: "Shapefile_template"
+author: "Adrian Wiegman"
+date: "January 24, 2018"
+output: html_document
+---
+###Online Resources
+[](http://neondataskills.org/R/csv-to-shapefile-R/)
+
+###Shapefile from list of coordinates
+```{r}
+# load packages
+#library(rgdal)  # for vector work; sp package should always load with rgdal. 
+#library (raster)   # for metadata/attributes- vectors or rasters
+
+#read data from csv and examine structure
+data = read.csv(file = "points_xy.csv",header = TRUE, sep = ",")
+data
+View(data)
+str(data)
+
+data$Y <-as.numeric(data$Y)
+data$X <-as.numeric(data$X)
+
+# view first 6 rows of the X and Y columns
+head(data$Y)
+head(data$X)
+
+# note that the easting (X) and northing (Y) columns are in columns 2 and 3
+spdata <- SpatialPointsDataFrame(data[,2:3],
+                    data)    #the R object to convert
+#assign CRS 
+spdata <- crs("+proj=utm +zone=18 +datum=WGS84 +units=m +no_defs 
+                    +ellps=WGS84 +towgs84=0,0,0" )
+View(spdata)
+
+# plot spatial object
+plot(spdata, 
+     main="Map of Plot Locations")
+
+#write spatial dataframe to shapefile
+writeOGR(spdata,getwd(),"pointshape",driver="ESRI Shapefile")
+```

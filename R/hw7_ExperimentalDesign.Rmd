@@ -1,0 +1,203 @@
+---
+title: "Homework 7"
+author: "Adrian Wiegman"
+date: "February 28, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install and load packages
+library(ggplot2);theme_set(theme_classic())
+library(plyr)
+library(multcompView)
+```
+
+```{r}
+#FUNCTION: simData
+#########################################################################
+# function to simulate random normal data for a specified experimental setup
+#inputs:
+#outputs:
+#-------------------------------------------------------------------------
+simData <- function(nFactors = 1, #number of treatment factors
+                    nBlocks = 3, #number of study blocks or sites
+                    nTreats = 3, #number of treatment levels for each factor
+                    nReps = 10, #number of observations or reps per treatment level per block
+                    AVG = 20, #average accross all samples 
+                    SD = 5, #standard deviation across all samples
+                    fE = 0, #factor effect
+                    bE = 0, #block effect
+                    tE = 5, #treatment effect
+                    rE = 0 #observation number effect important for a time series
+                    ){
+  ID <- NULL
+  factor <- NULL
+  block <- NULL
+  treatment <- NULL
+  observation <- NULL
+  response <- NULL
+  i <- 0
+  for (f in seq(1,nFactors)){
+    for (b in seq(1,nBlocks)){
+      for (t in seq(1,nTreats)){
+        for (r in seq(1,nReps)){
+          i <- i + 1
+          ID <- c(ID,i)
+          factor <- c(factor,f)
+          block <- c(block,b)
+          treatment <- c(treatment,t)
+          observation <- c(observation,r)
+          response[i] <- AVG + f*fE* + b*bE + t*tE + r*rE + 5*rnorm(n=1)
+        } # end o loop
+      } # end t loop
+    } # end b loop
+  } # end f loop
+  Data <- data.frame(ID,
+                     factor,
+                     block,
+                     treatment,
+                     observation,
+                     response)
+  str(Data)
+  print(qplot(x=ID,y=response))
+  return(Data)
+} 
+######################################################################
+```
+
+```{r}
+#START FUNCTION: AOVtest
+######################
+# function to conduct Analysis of Variance, produce a vector of outputs and plot a graph
+#inputs:
+#y - continuous response variable
+#x - categorical x variable
+#alpha - significance level e.g. 0.05 or 0.01 or 0.001
+#postHoc - T/F if TRUE function runs TukeyHSD
+#outputs: returns a list with p value and TukeyHSD results
+AOVtest <- function(y=runif(30),x=rep(letters[1:3],each=10),alpha=0.05,postHoc = TRUE){
+  if (length(y)!=length(x)){
+    stop('x and y vectors are not the same lenght')
+  }
+  y <- y #response
+  x <- factor(x) #treatment
+  df <- data.frame(ID=1:length(y),y=y,x=x)
+  t <- aov(y~x, data=df) #analysis of variance function
+  pvalue <- as.numeric(unlist(summary(a))[9])
+  if (pvalue <= alpha && postHoc ==TRUE){
+    tuk <- TukeyHSD(t, ordered = FALSE, conf.level = (1 - alpha))
+    results <- c('p'= pvalue, #p-value for h0 means are not different
+                 tuk$x) #results of tukey table
+    return(results)
+  }
+  results <- c('p'=pvalue, unlist(t))
+  return(results)
+}
+#END FUNCTION AOVtest
+########################
+```
+
+```{r}
+###################################
+#///FUNCTION: REGtest
+#conduct linear regression and produce a vector of outputs
+REGtest <- function(x=runif(30), y=runif(30)){
+  myREG  <- lm(response ~ treatment, data=myData) # produces results as a list
+  vREG <- unlist(myREG) # vectorized regression outputs
+  REGout <- c(vREG) # summarized outputs
+  return(REGout)
+}
+```
+
+```{r}
+#START FUNCTION: plotAOV
+###########################
+# produces a boxplot labeled with analysis of variance results 
+# Inputs: 
+# treatment - catagorical x independant variable 
+# response - continuous y dependant variable
+# statsOnPlot - T/F if TRUE graph p value and post hoc test on plot
+# postHoc - T/F if TRUE graph significant difference labels on plot
+#Outputs: 
+#p - ggplot object with boxplot and results
+#Dependancies:
+# tukeylabel_df()
+# ggplot2
+#-----------------------------
+plotAOV <- function(treatment=rep(letters[1:3],each=10), response=runif(30),statsOnPlot=FALSE,postHoc=FALSE){
+ #create data frame with analysis
+  df <- data.frame(ID = 1:length(x),x=factor(treatment),y=response)
+  if(statsOnPlot==TRUE){
+      #generate significant diference labels for postHOC tests
+    if (postHoc == TRUE){ 
+      stats <- tukeylabel_df(lev=x,y=y,flev='lev',alpha=alpha) #call tukeylabel_df
+      p <- ggplot(data=df,aes(x=x,y=y,fill=x))+geom_boxplot()
+      p <- p + geom_text(data=stats, 
+                         aes(x=plot.labels, 
+                             y=V1, 
+                             label=labels)
+      } else {
+        t <- unlist(summary(aov(y~x,data=df)))
+        pvalue <- toString(t[9]) 
+        p <- ggplot(data=df,aes(x=x,y=y,fill=x))+
+          geom_boxplot()+
+          geom_text(aes(x=Inf,y=Inf,hjust=1.1,
+                                  vjust=1.5,label=paste("p =",pvalue)))
+      } #end if postHoc
+  } else {#if stats on plot not equal TRUE
+    p <- ggplot(data=df,aes(x=x,y=y,fill=x))+geom_boxplot()
+  } #end if stats on plot
+  return(p) # return ggplot object
+}
+#END FUNCTION: plotAOV
+########################
+```
+```{r}
+#START FUNCTION: tukeylabel_df
+#########################
+#generates labels indicating significant differences from tukey post-hoc
+#inputs:
+# tukHSD - TukeyHSD(a) object results for dataframe a 
+# flev - the name of the treatment variable or x in the dataframe used in the TukeyHSD() test
+#Outputs: a dataframe of labels for the tukey test
+#--------------------------
+tukeylabel_df <- function(lev,y,flev='lev',alpha=0.05){
+  # Extract labels and factor levels from Tukey post-hoc
+  df <- data.frame(lev=factor(lev),y=y)
+  HSD <- TukeyHSD(aov(y~lev,data=df), ordered = FALSE, conf.level = (1-alpha))
+  Tukey.levels <- HSD[[flev]][,4]
+  Tukey.labels <- multcompLetters(Tukey.levels)['Letters']
+  plot.labels <- names(Tukey.labels[['Letters']])
+  # Get highest quantile for Tukey's 5 number summary and add a bit of space to buffer between    
+  # upper quantile and label placement
+  boxplot.df <- ddply(d, flev, function (x) max(fivenum(x$y)) + 0.2)
+  
+  # Create a data frame out of the factor levels and Tukey's homogenous group letters
+  plot.levels <- data.frame(plot.labels, labels = Tukey.labels[['Letters']],
+                            stringsAsFactors = FALSE)
+  
+  # Merge it with the labels
+  labels.df <- merge(plot.levels, boxplot.df, by.x = 'plot.labels', by.y = flev, sort = FALSE)
+  
+  return(labels.df)
+}
+#END FUNCTION: tukeylabel_df
+############################
+```
+
+```{r}
+#
+myData <- simData()
+alpha <- 0.05
+myAOV <- AOVtest(y=myData$response,x=myData$treatment,alpha=alpha)
+str(myAOV)
+if (myAOV[1] <= alpha){
+  
+}
+plotAOV(response=myData$response,
+        treatment=myData$treatment,
+        statsOnPlot=TRUE,
+        postHoc=TRUE) #currently there is an error placing labels onto the plot 
+```
+

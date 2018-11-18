@@ -1,0 +1,123 @@
+---
+title: "Homework 5 - Regular Expressions"
+author: "Adrian Wiegman"
+date: "February 14, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+For this homework I am using the text editor *Sublime Text 3*, this [link](http://docs.sublimetext.info/en/latest/search_and_replace/search_and_replace_overview.html#using-regular-expressions-in-sublime-text) provides documentation for how to start using regular expression (regex) searches with this editor. The find and replace command is `ctrl + H`, once this function interface is open click the `.*` icon to activate regular expressions. 
+
+
+### Question 1
+Turn a tab delimited file into a CSV
+
+**Inital text file**
+```
+First String    Second      1.22      3.4
+Second          More Text   1.555555  2.2220
+Third           x           3         124
+```
+**regex** find: `\s{2,}`, replace with: `,`
+
+**Resulting text file**
+```
+First String,Second,1.22,3.4
+Second,More Text,1.555555,2.2220
+Third,x,3,124
+```
+**comments** this command does not work in *notepad++*
+
+### Question 2
+Reformatt a list of names and institutions from:`Last, First, Institution` to `First Last (Institution)`
+
+**Initial text file**
+```
+Ballif, Bryan, University of Vermont
+Ellison, Aaron, Harvard Forest
+Record, Sydne, Bryn Mawr
+```
+**regex** find: `(\w+)\, +(\w+)\, +(.*)` replace with: `\2 \1 \(\3\)`
+
+**resulting file**
+```
+Bryan Ballif University of Vermont
+Aaron Ellison Harvard Forest
+Sydne Record Bryn Mawr
+```
+**comments** i have included a `*` after the `, ` incase there was more white or less white space 
+
+### Question 3
+Step 1. Reformatt a list of song names on one line to a column of individual songs
+
+**Initial text file**
+```
+0001 Georgia Horseshoe.mp3 0002 Billy In The Lowground.mp3 0003 Cherokee Shuffle.mp3 0004 Walking Cane.mp3
+```
+**regex** find: `(\w+\.mp3)\s` replace with: `\1\n`
+
+**resulting file**
+```
+0001 Georgia Horseshoe.mp3
+0002 Billy In The Lowground.mp3
+0003 Cherokee Shuffle.mp3
+0004 Walking Cane.mp3
+```
+**comments** i have added a 0 to song 003 so that it conforms to the four digit format, however this code would work for less than four digit song numbers. 
+
+Step 2. move the song number after of the song name separated by an underscore 
+
+**regex** find: `(\d+)\s(.+)(\.mp3)` replace with: `\2_\1\3`
+
+**resulting file**
+```
+Georgia Horseshoe_0001.mp3
+Billy In The Lowground_0002.mp3
+Cherokee Shuffle_0003.mp3
+Walking Cane_0004.mp3
+```
+
+### Question 4
+Rearrange a dataframe to truncate the taxonomic names of species and to only include the last data column
+
+**initial text**
+```
+Camponotus,pennsylvanicus,10.2,44
+Camponotus,herculeanus,10.5,3
+Myrmica,punctiventris,12.2,4
+Lasius,neoniger,3.3,55
+```
+**regex** find: `(\w).+\,(.+)\,.+\,(.+)` replace: `\1_\2,\3`
+
+**resulting text**
+```
+C_pennsylvanicus,44
+C_herculeanus,3
+M_punctiventris,4
+L_neoniger,55
+```
+
+Step 2. now abbreviate the species names down to the first four chars.
+
+<<<<<<< HEAD
+**regex** find: `(\w_\w{4})\w*(.*)` replace: `\1\2`
+=======
+**regex** find: `(\w_\w{4})\w*(.*)` replace: \1\2
+>>>>>>> 30ba9ea3b95ec6cda053257ec3d0c744153add73
+
+**resulting text file**
+```
+C_penn,44
+C_herc,3
+M_punc,4
+L_neon,55
+```
+
+
+
+
+
+

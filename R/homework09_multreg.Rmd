@@ -1,0 +1,175 @@
+---
+title: "Homework 9"
+author: "Adrian Wiegman"
+date: "February 28, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# load packages
+library(ggplot2);theme_set(theme_classic())
+library(plyr)
+library(multcompView)
+# set working directory
+setwd("C:/Users/Adria/Documents/R/Projects/BIO381/HW7")
+# set random number seed
+set.seed(100)
+```
+## Assigment Objectives
+
+I am examinining the factors that influence flux of phosphorus (P) to and from inundated sediments. One indicator of P flux is the molar ratio of phosphorus to the aluminum plus iron yielded using a signle extractant, sometimes called the Degree of P Saturation, DPS. Depth is a major control on soil properties because correlates to gradients of oxgyen availability and organic matter. In this homework I reproduce data from Nair et al. 2004 who examine the relation between water soluble P (WSP)and the DPS in surface and subsurface soil horizons. I will generate random data based roughly on fig 1 below and perform a regression. I will test how many data points are needed to get a significant slope value, assuming that DPS is a random uniform number between 0 and 1 and WSP increases as function of DPS whose variance increases with DPS. 
+
+In this assignment I am modifying the functions from [Homework 7](BIO381/HW7/homework07.html). In the new script the updated version of the function is placed directly below the original. 
+
+**Change Log:**
+`simulateLinearXY` has been changed to `simulateModel` the new version is capable of simulating y for any function of x that can be specified in an string containing an expression (e.g. `eqn = '4*x^2 + 2*x + 3 + rnorm(length(x),0,sd)'` before entering the string into the function it is best to check it in the console using a single value for x. `simulateModel` can support simulation of y for multiple independant variables, in this case it is important to ensure the colnames are correctly referenced in the expression. It may safer to reference the column index number when typing the model string. Simulate model  
+
+`SLR_results` has been changed to `MLR_results` the new version now supports multiple regression and model must be specified as a two sided formula object (e.g. `model = y~x1*x2`). It is crucial that the arguments passed into the formula object match the exact colnames of intended independant and dependant variables. It is very important to note that formulas are short-hand for interatction types between variables, for example `y~x1*x2` evaluates as `y <- b0 + b1*x1 + b2*x2 + b3*x1*x2`, while `y~x1+x2` evaluates as `y <- b0 + b1*x1 + b2*x2`. To find the the right notation for the model you intend to fit see this [link](formulanotation.pdf). `MLR_results` returns a list object containing the most crucial parameters for mulitple regression, such as p-values of betas (coefficents of x terms), aic score, root mean squared error, and F-statistics. These parameters can be picked out and optimized algorithmically. 
+
+`plotSLR` has been changed to `ggplotModel` which uses ggplot2 to simulate a curve over datapoints. The updated function works in similar fashion to simulateModel in that the user must define `model` equal to a string that can be evaluated as an expression that transforms one for more independant variables. `X` must be defined as a matrix of independant variables with no column names; the function will automatically generate names for the independant variables based on their column index position inside of `X`. `saveas` is a stirng containing a names and valid extension to `ggsave` the plot. 
+
+
+![Fig. 1](FIg_Nair2004.png)
+
+```{r}
+# Define Functions------------------------------------
+#######################################
+#FUNCTION: simulateModel
+#simulates y as a function of x
+#input: x - a vector of x values
+#       model - a string containing expression that tranforms x
+#             example: for y = 5*x enter model = '5x'
+#             check that the expression can be evaluated 
+#             by replacing x with 1 and pasting in console (5*1)
+#output: z - a list containng:
+#             model - a string of the model equation
+#             df - data frame of x and y values
+#--------------------------------------
+simulateModel <- function(
+                    Xs = data.frame(X1= rnorm(10),X2=rnorm(10)), #number of samples
+                    model = '0 + 1*X1 + 2*X2 + rnorm(length(X1),0,1)'
+                    ){
+  Y <- with(Xs, eval(parse(text=model)))
+  df  <- cbind(Y=Y,Xs)
+  return(df)
+} 
+print(simulateModel())
+
+#######################################
+#///FUNCTION: MLR_results
+#conducts muliple regression and returns list of key results
+#input: df - data frame of three or more numeric vectors
+#       model - two sided formula object that uses the column 
+#               names from the df
+#output: a list of key results
+#--------------------------------------
+MLR_results <- function(df = NULL, model=NULL){
+  if(is.null(df)) df<-data.frame(y=runif(15),X1=runif(15),X2=runif(15))
+  if(is.null(model)) model <- Y~X1*X2
+  . <- lm(model, data=df) # produces results as a list
+  betas <- .$coefficients # vectorized regression outputs
+  betaPs <- summary(.)$coefficients[1:nrow(summary(.)$coefficients),4]
+  fstats <- summary(.)$fstatistic
+  r_sq <- summary(.)$r.squared
+  rmse <- sqrt(mean(residuals(.)^2))
+  aic <- AIC(.)
+  . <- list(betas=betas,betaPs=betaPs,
+            fstats=fstats,r_sq=r_sq,rmse=rmse,aic=aic)
+}
+MLR_results()
+
+#########################################
+#FUNCTION: plotModel
+#plots a specific modelfit to a data frame given as a formula 
+#input: df - a two or more column datafarme (y,x)
+#       eqn - a string containing the right hand side of 
+#             an equation that transforms x (col=2 in df)
+#             (e.g. eqn = '5*x^2' will be evaluated as
+#                   y_m <- 5*x^2) 
+#output: plotted model over data 
+#----------------------------------------
+ggplotModel <- function(df=NULL,model=NULL,saveas=paste0('modelplot',Sys.Date(),'.png')){
+  #test the function
+  require(ggplot2); theme_set(theme_classic())
+  if(is.null(df)){
+    df<-data.frame(y=runif(15),x=runif(15))
+  }
+  #default fits lm to y as function of x
+  if(is.null(model)){
+    .<-lm(df[,1]~df[,2],data=df)
+    model <- paste0(round(.$coefficients[1],2)," + ",
+                    round(.$coefficients[2],2),"*x")
+  }
+  #main body of function
+  y_m <- with(df, eval(parse(text=model)))
+  df <- cbind(df,y_m)
+  p <- ggplot(data=df,mapping=aes(y=df[,1],x=df[,2]))+ geom_point()+
+         labs(title=paste('y =',model),x=colnames(df)[2],y=colnames(df)[1])+
+         geom_line(data=df, mapping=aes(y=y_m,x=df[,2]),color="Blue")p <- ggplot(data=df,mapping=aes(y=df[,1],x=df[,2]))+ geom_point()+
+         geom_line(data=df, mapping=aes(y=y_m,x=df[,2]),color="Red")
+  print(p)
+  ggsave(saveas,p)
+}
+ggplotModel()
+```
+
+```{r}
+# Main Program----------------------------------------
+
+# set global parameters
+alpha <- 0.001 #significance level - 95% confidence
+p <- 1 #p value of statistical test
+b0 <- 0 # b0 is the y-intercept parameter
+b1 <- 1 #b1 is the slope parameter
+b2 <- 1.25 #b2 is a multiplier of the slope parameter
+sd <- 25 # standard error
+n = 30 #number of samples
+sims = 1 # number of simulations
+X1range = 100
+pVals <- rep(NULL,n)
+m <- "b0 + b1*X1 + b2*X1*X2 + rnorm(length(X1),0,sd)"
+myRandModel <- paste0(b0,' + ',b1,'*X1 + ',b2,'*X1*X2 + rnorm(length(X1),0,',sd,')')
+myModel <- stringr::str_split(myRandModel,'\\+\\s[:alpha:]{4}.*')[[1]][1]
+myFormula <- 'Y~X1+X1:X2' # a string containing an expression of type formula 
+# printing model to console
+cat("y = ",m,"\n y = ",myRandModel,"\n","Use the following `formula` To fit this model with `lm()`: \n",myFormula)
+                        
+
+# Objective 1:
+# determine the number of samples needed to have a significant result
+while (p >= alpha){
+  n <- n + 1
+  # simulate random model 'sims' times
+  for (i in seq(1,sims)){
+    
+    #SPECIFY MODEL AS A STRING WITH PARAMETERS VALUES (b0...bn,sd,etc)
+    # myModel is copies from above incase parameter values are being tested
+    # myRandModel <- paste0(b0,' + ',b1,'*X1 + ',b2,'*X1*X2 + rnorm(length(X1),0,',sd,')')
+    # myModel <- stringr::str_split(myRandModel,'\\+\\s[:alpha:]{4}.*')[[1]][1]
+    #SPECIFY RANGE OF X VARIABLES
+    # X1 a random uniform number between 0 and X1range
+    X1 <- eval(parse(text=paste0("runif(",n,")*",X1range)))
+    # if X1 is greater than random number with mean of 20 
+    # then set X2 equal to 1 else set equal to zero
+    X2 <- as.numeric(X1 > rnorm(length(X1),20,5))
+    
+    #create a dataframe containing Y and X vectors, where Y = myModel(Xs)
+    myData <- simulateModel(Xs = data.frame(X1=X1,X2=X2), model = myRandModel)
+    
+    #get regression stats
+    myResults <- MLR_results(myData,formula(myFormula))
+    if (i == 1){
+      pVals[i]<- myResults['p_slope']
+    }else {
+    pVals[i]<- myResults['p_slope']
+    }
+  }
+  p <- median(pVals)
+  #p <- mean(pVals<alpha)
+}
+print(c("number of samples"=n))
+ggplotModel(df=myData,model=myModel)
+# END PROGRAM-----------------------------------------
+```
+

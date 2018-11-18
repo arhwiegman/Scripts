@@ -1,0 +1,154 @@
+---
+title: "Homework 4 - BIO 381"
+author: "Adrian Wiegman"
+date: "February 7, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Question 1. 
+Suppose x = 1.1, a = 2.2, and b = 3.3. Assign each expression to the value of the variable z and print the value stored in z.
+```{r}
+#insert r code chunks quickly using Ctrl + Alt + I 
+X <- 1.1
+a <- 2.2
+b <- 3.3
+z <- vector(length=4)
+z[1] <- X^a^b
+z[2] <- (X^a)^b
+z[3] <- 3*X^3 + 2*X^2 + 1
+z[4] <- floor(10*(z[3] - floor(z[3]))) 
+names(z) <- letters[seq_along(z)]
+#floor(x) gives the left most digit in x
+#for example: if x = 3.5 floor(x) = 3 
+for (i in seq_along(z)){print(z[i])}
+```
+- A. $$ z = x^{a^{b}} = $$ `r z['a']`
+- B. $$ z = (x^a)^b = $$  `r z['b']`
+- C. $$z = 3x^3 + 2x^2 + 1 = $$ `r z['c']`
+- D. second digit in z, C. = `r z['d']`
+
+### Question 2. 
+Using the rep and seq functions, create the following vectors:
+```{r}
+a <- c(seq(from=1,to=8),seq(7,1))
+print(a)
+b <- rep(x=1:5,times=1:5)
+print(b)
+c <- rep(x=5:1,times=1:5)
+print(c)
+```
+
+### Question 3. 
+Create a vector of two random uniform numbers. In a spatial map, these can be interpreted as x and y coordinates that give the location of an individual (such as a marked forest tree in a plot that has been mapped). Using one of R’s inverse trigonometry functions (asin(), acos(), or atan()), convert these numbers into polar coordinates (If you don’t know what polar coordinates are, read about them on the web or in your calculus textbook).
+```{r}
+set.seed(10)
+z <- runif(2)
+print(z) # z[1] is x and z[2] is y
+xyCoords <- z
+names(xyCoords) <- c('x','y')
+radius <- sqrt(z[1]^2 + z[2]^2) #pythagorian theorum
+print(radius)
+theta <- atan2(x=z[1],y=z[2]) #using arctan2 to convert x,y to an angle
+theta <- acos(z[1]/radius) #using arcsin of (x/radius) produces theta relative to 0,1
+atan2(x=z[1],y=z[2])/theta 
+atan2(x=z[1],y=z[2])/theta == 1 #check that these equations are equal
+#something is wrong with this test, the value is 1 but the test gives FALSE
+print(theta*360/(2*pi)) #radians to degrees
+polarCoords <- c(radius,theta) #radians
+names(polarCoords) <- c('radius','theta')
+```
+
+randomly generated x,y coordinates $(x,y):$ 
+```{r} 
+print(xyCoords)
+```
+to convert x,y coordinates to polar coordinates (radius,angle), the radius, $r$, is calculated by calculating the length of the hypotenus of vector x,y using pythagarian theorum:
+$$r = \sqrt{x^2+y^2}$$
+
+then the angle or theta, $\theta$, can be caclulated using triganometric functions, e.g.: 
+$\theta = \arctan{(r/x)}$ or $\theta = \arctan_2{(x,y)}$
+
+the results below are n dimension polar coordinates generated from the x,y values above, r is between 0 and 1, $\theta$ is in radians:
+$(r,\theta)$ `r print(polarCoords)`
+to convert from radians to degrees multiply $\theta$ by $360/2\pi$
+
+### Question 4. 
+Suppose that queue <- c("sheep", "fox", "owl", "ant") and that queue represents the animals that are lined up to enter Noah’s Ark, with the sheep at the front of the line. Using R expressions, update the queue successively as
+```{r}
+queue <- c('sheep','fox','owl','ant')
+print(queue)
+print("are waiting to get on Noah's Arc...")
+
+paste("Here comes the serpant! Now")
+queue <- c(queue,'serpant')
+print(queue)
+print("are waiting to get on Noah's Arc.")
+
+paste("the sheep has entered the deck! Now")
+queue <- queue[-1]
+print(queue)
+print("are waiting to get on Noah's Arc.")
+
+paste("Donkey is here, and he chats his way to the from! Now")
+queue <- c('donkey',queue)
+print(queue)
+print("are waiting to get on Noah's Arc.")
+
+paste("Owl fly's away, she must have been bored! Now")
+pos <- which(x=queue=='owl')
+queue <- c(queue[-pos])
+print(queue)
+print("are waiting to get on Noah's Arc.")
+
+paste("Aphid arrives and ant lets aphid ant line! Now")
+ant <- which(x=queue=='ant')
+queue <- c(queue[1:(pos-1)],'aphid',queue[pos:length(queue)])
+print(queue)
+
+pos <- which(x=queue=='aphid')
+paste(queue[pos],"'s position in line is ",pos,sep='')
+```
+### Question 5. 
+Use R to create a vector of all of the integers from 1 to 100 that are not divisible by 2, 3, or 7.
+```{r}
+myVector <- seq(1,100)
+mult2 <- myVector%%2==0 #remainder of vector elements divided by 2 equals to zero
+mult3 <- myVector%%3==0 
+mult7 <- myVector%%7==0 
+#myVector <- myVector * mult2 * mult3 * mult7
+myVector <- myVector[mult2==FALSE & mult3==FALSE & mult7==FALSE]
+typeof(myVector)
+length(myVector)
+myVector == (myVector%%2==0 & myVector%%3==0 & myVector%%7==0)
+print(myVector)
+```
+### Question 6. 
+Create a vector z of 1000 random uniform numbers. 
+```{r}
+set.seed(10)
+z <- runif(1000)
+```
+Create a vector that contains 3 numbers: the proportion of the numbers in z that are less than 0.10, greater than 0.90, and between 0.45 and 0.55.
+```{r}
+zDist <- c(length(z[z<0.1])/length(z),length(z[z>0.9])/length(z),length(z[z>0.45&z<0.55])/length(z))                       
+names(zDist) <- c('p<0.1','p>0.9','p0.45-0.55')
+print(zDist)
+```
+Making successive copies of z, transform your vector of uniform numbers in the following ways:
+```{r}
+for (i in 1:4){
+  if(i==1) z <- log10(z)
+  if(i==2) z <- z^2
+  if(i==3) z <- exp(z)
+  if(i==4) z <- sqrt(z)
+  #print(head(z))
+  zDist <- c(length(z[z<0.1])/length(z),length(z[z>0.9])/length(z),length(z[z>0.45&z<0.55])/length(z))
+  print(head(z))
+  names(zDist) <- c('p<10%','p>90%','p0.45-0.55%')
+  print(zDist)}
+```
+

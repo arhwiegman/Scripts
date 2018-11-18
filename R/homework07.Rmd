@@ -1,0 +1,126 @@
+---
+title: "Homework 7"
+author: "Adrian Wiegman"
+date: "February 28, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# load packages
+library(ggplot2);theme_set(theme_classic())
+library(plyr)
+library(multcompView)
+# set working directory
+setwd("C:/Users/Adria/Documents/R/Projects/BIO381/HW7")
+# set random number seed
+set.seed(100)
+```
+## Assigment Objectives
+
+I am examinining the factors that influence flux of phosphorus (P) to and from inundated sediments. One indicator of P flux is the molar ratio of phosphorus to the aluminum plus iron yielded using a signle extractant, sometimes called the Degree of P Saturation, DPS. Depth is a major control on soil properties because correlates to gradients of oxgyen availability and organic matter. In this homework I reproduce data from Nair et al. 2004 who examine the relation between water soluble P (WSP)and the DPS in surface and subsurface soil horizons. I will generate random data based roughly on fig 1 below and perform a regression. I will test how many data points are needed to get a significant slope value. Based on eyeball examination of figure 1, I assume a slope (b1) of `2` and normally distributed residual error term or variance (E) with magnitude of `~25`, which yields a standard deviation (sd) of `sqrt(25)`. 
+
+![Fig. 1](FIg_Nair2004.png)
+
+```{r}
+# Define Functions------------------------------------
+
+#########################################################################
+#FUNCTION: simulateLinearXY
+# function to simulate random normal with a linear relation between x and y
+#inputs: n(number of samples), 
+#        slope - (deltaY/deltaX)
+#        intercept - y value where x = 0 
+#        sd - standard deviation
+#
+#outputs:
+#-------------------------------------------------------------------------
+simulateLinearXY <- function(
+                    x = NULL, #number of samples
+                    slope = 1,
+                    intercept=0,
+                    sd=1 #sample error or variance in the y direction
+                    ){
+  if (is.null(x)) x <- rnorm(15,20,10)
+  y <- intercept + slope*x + rnorm(length(x),0,sd)
+  df <- data.frame(y=y,x=x)
+  
+  return(df)
+}
+plot(simulateLinearXY()$x,simulateLinearXY()$y)
+
+
+###################################
+#///FUNCTION: fitSLR
+# fits simple linear regression for y as a function of x
+#input: df - a dataframe of numeric values, first column = y 
+#            df[,1] = y;  df[,2] = x
+#outputs: a vectorized summary of lm results
+#--------------------------------------
+SLR_results <- function(df = NULL){
+  if(is.null(df)) df<-data.frame(y=runif(15),x=runif(15))
+  . <- lm(df[,1]~df[,2], data=df) # produces results as a list
+  b0 <- .$coefficients[1] # vectorized regression outputs
+  b1 <- .$coefficients[1] # summarized outputs
+  p0 <- summary(.)$coefficients[1,4]
+  p1 <- summary(.)$coefficients[2,4]
+  r_sq <- summary(.)$r.squared
+  . <- c(intercept=b0,slope=b1,p_intercept=p0,p_slope=p1,r_sq=r_sq)
+  return(.)
+}
+SLR_results()
+
+
+#########################################
+#FUNCTION: plotSLR
+#plot simple linear regression on xy scatter
+#input: df - a two-column datafarme (y,x)
+#output: plotted regression line over data
+plotSLR <- function(df=NULL){
+  if(is.null(df)) df<-data.frame(y=runif(15),x=runif(15))
+  .<-lm(y~x,data=df)
+  eqn <- paste0("y = ",round(.$coefficients[1],2)," + ",round(.$coefficients[2],2),"*x")
+  plot(y=df[,1],x=df[,2],main=eqn,ylab=colnames(df)[1],xlab=colnames(df)[2])
+  abline(.)
+}
+plotSLR()
+```
+
+```{r}
+# Main Program----------------------------------------
+
+# set global parameters
+alpha <- 0.001 #significance level - 95% confidence
+p <- 1 # initialize p value of statistical test
+b0 <- 0 # b0 is the y-intercept parameter
+b1 <- 0.2 #b1 is the slope parameter
+sd <- sqrt(25) # sample error or variance
+n = 2 #number of samples
+pVals <- rep(NULL,n)
+nreps = 20
+#
+                        
+
+# Objective 1:
+# determine the number of samples needed to have a significant result
+while (p >= alpha){
+  n <- n + 1
+  for (i in seq(1,nreps)){
+    x <- runif(n)*100
+    myData <- simulateLinearXY(x=x,slope=b1,intercept=b0,sd=sd)
+    myResults <- SLR_results(myData)
+    if (i == 1){
+      pVals[i]<- myResults['p_slope']
+    }else {
+    pVals[i]<- myResults['p_slope']
+    }
+  }
+  p <- mean(pVals)
+  #p <- mean(pVals<alpha)
+}
+print(c("number of samples"=n))
+plotSLR(df=myData) 
+#plotSLR(df=myData) 
+# END PROGRAM-----------------------------------------
+```
+

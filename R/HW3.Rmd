@@ -1,0 +1,74 @@
+---
+title: "Beamer Presentation BIO 381 HW3"
+author: "Adrian Wiegman"
+date: "February 3, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Primary objective of the Presentation
+
+- demonstrate use of sequential and simultaneous bullet points
+- use colored text
+- use an images 
+- use an image with a caption
+- use an image with an overlayed caption
+
+## Secondary objective of the presentation
+
+- talk about my what i had for breakfast!
+
+## Ingredients of my breakfast 
+
+>- {\color{yellow} eggs}
+>- {\color{magenta} ham}
+>- {\color{green} green dye}
+>- {\color{black} butter}
+
+## An R vector of what I had for breakfast
+
+```{r cars, echo = TRUE}
+Breakfast <- c('green','eggs','and','ham')
+print(Breakfast)
+```
+
+## An equation for the weight I gained after eating my breakfast
+
+$B = E*n~e~*k~ce~ + GD + H**k~ch~ + B*k~cb~$
+
+
+- B is the mass of my breakfast (grams), E the mass of on large chicken egg (grams), n~e~ is the number of eggs, k~ce~ is the moisture loss coefficient (g g^-1^) for pan frying one raw egg from a temp of 5degC to a mean tempurature of 70degC 
+
+- GD is the mass of green dye added to the egg yolk prior to frying
+
+- H the mass of a standard 1 cm thick slice of ham shank with a diameter of 15cm (grams), and k~ch~ is the moisture loss coefficient for pan frying a standard slice smoked ham shank up from 5decC to to 70decG
+
+- B the mass of butter added, to greese the pan, k~cb~ is the moisture loss coefficient to bring the eggs and ham from a temp of 5degC to 70degC
+
+## A picture of what I had for breakfast
+ \begin{picture}(320,250)
+ \put(85,75){\includegraphics[height=6cm]
+ {samiam.jpg}}
+ \put(00,60){\begin{minipage}[t]{1\linewidth}
+ {Choose a point on the unit circle. Connect it to 
+ the origin with a line of 
+ length one, and denote the angle between that line 
+ and the horizontal 
+ coordinate axis by $\theta$.}
+ \end{minipage}}
+ \end{picture}
+
+## A properly annotated picture of what I had for breakfast
+
+green eggs and ham
+\begin{picture}(320,250)
+\put(0,0){\includegraphics[height=6cm]{samiam.jpg}}
+\end picture
+source: [](http://www.drseussart.com/illustration-art/green-eggs-and-ham-50th-anniversary-print)
+
+
+
+

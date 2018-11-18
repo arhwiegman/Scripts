@@ -1,0 +1,141 @@
+---
+title: "Mushroom Yield Stats"
+author: "Adrian Wiegman"
+date: "April 18, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Analysis of oyster mushroom yield from digestate recipes from Brendan Obrien's masters thesis. The experiment was set up as a nested block design. Two yield trials were conducted on 
+
+dataframe:
+
+|ID | Block (B) | Digestate (D) | Recipe (R) | Yield (Y)|
+|---|---|---|---|
+|1|1|1|1|-|
+|1|1|1|2|-|
+|...|...|...|...|
+|1|1|1|n|-|
+|1|1|2|1|-|
+|...|...|...|...|
+|1|1|2|n|-|
+
+
+`lm(Y~B*D*R,data=dataframe)`
+- Saturday
+	- 
+
+```{r}
+#########################################################################
+#FUNCTION: creatExperiment
+# function to simulate random normal data for a specified balanced experimental setup
+#inputs: 
+# number of factors, blocks, levels, replications in experiment
+# sample mean and standard deviation of all samples
+# the effect size of blocks, factors, treatments, replications
+
+#outputs:
+# a datafram containing random data and treatment factors
+#notes on updates:
+# - This is a revised version of simulateData, which operated very slowly
+# because the function called c() to build vectors within a for loop. This version pre-assigns the mode and length of vectors based on the number of factors, blocks, levels and replications. 
+# - The response variable model can now be specified in a string using the same notation as lm() 
+#   y~x1+x2 --> y = b0 + b1*x1 + b2*x2 + E
+    
+#-------------------------------------------------------------------------
+makeXdf <- function(nBlocks = 1, #number of study blocks or sites
+                    nFactors = 1, #number of treatment factors
+                    nLevels = 3, #number of treatment levels for each factor
+                    nReps = 10 #number of replications f(b(l(r))))
+                      ){
+  nTotal <- nFactors*nBlocks*nLevels*nReps
+  ID <- vector(mode = "numeric", length = nTotal)
+  fact <- vector(mode = "numeric", length = nTotal)
+  block <- vector(mode = "numeric", length = nTotal)
+  level <- vector(mode = "numeric", length = nTotal)
+  rep <- vector(mode = "numeric", length = nTotal)
+  response <- vector(mode = "numeric", length = nTotal)
+  i <- 0
+  for (b in seq(1,nBlocks)){
+    for (f in seq(1,nFactors)){
+      for (l in seq(1,nLevels)){
+        for (r in seq(1,nReps)){
+          i <- i + 1
+          ID[i] <- i
+          fact[i] <- f
+          block[i] <- b
+          level[i] <- l
+          rep[i] <- r
+          cat(i,"f",f,"b",b,"l",l,"r",r,"\n")
+        }# end o loop
+      } # end t loop
+    } # end b loop
+  } # end f loop
+  df <- data.frame(ID=ID,
+                   Blk=block,
+                   Dgst=fact,
+                   Rcp=level,
+                   Yld=response)
+  return(df)
+}
+
+
+#make a dataframe 
+df <- makeXdf(nBlocks = 2, #number of study blocks or sites
+              nFactors = 2, #number of treatment factors
+              nLevels = 6, #number of treatment levels for each factor
+              nReps = 4)
+
+# simulate yield as a function of block(Blk) factor(Dgst) and level(Rcp)onto data
+b0 <- 450 # average Yld across all data
+b1 <- 0 #
+b2 <- 200
+b3 <- 30
+b4 <- 0
+SD <- 100
+
+df$Yld <- with(df, b0 + b1*Blk + b2*Dgst + b3*Rcp + b4*Dgst*Rcp + rnorm(length(df$Yld),0,SD))
+df
+dfAOV <- data.frame (ID=df$ID,
+                     Blk=as.factor(df$Blk),
+                     Dgst=as.factor(df$Dgst),
+                     Rcp=as.factor(df$Rcp),
+                     Yld=df$Yld)
+
+str(dfAOV)
+
+model <- lm(Yld~Blk + Dgst*Rcp,data=dfAOV)
+summary(model)
+
+
+#PLOT DATA
+library(ggplot2); theme_set(theme_classic())
+
+myColors <- c('red','green','pink','blue','orange','cyan')
+p1 <- ggplot(data=dfAOV, mapping=aes(x=Rcp,y=Yld)) + geom_boxplot(data=dfAOV, mapping=aes(fill=Dgst))
+p1 + scale_fill_manual(values=myColors)
+p1 + scale_fill_brewer(palette="BuGn")
+
+p2 <- ggplot(data=dfAOV, mapping=aes(x=Dgst,y=Yld)) + geom_boxplot(data=dfAOV, mapping=aes(fill=Rcp))
+
+#color schemes available from color brewer
+#http://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3
+# the website above helps you pick the right colors
+
+#Diverging color schemes (two or three colors equal saturation)
+p2 + scale_fill_brewer(palette="Spectral")
+p2 + scale_fill_brewer(palette="RdYlGn") 
+p2 + scale_fill_brewer(palette="PRGn") #color blind safe
+
+#sequential color schemes (two or three colors equal saturation)
+p2 + scale_fill_brewer(palette="YlOrRd")
+p2 + scale_fill_brewer(palette="RdPu")
+p2 + scale_fill_brewer(palette="BuPu") 
+p2 + scale_fill_brewer(palette="Greys")
+
+```

@@ -1,0 +1,173 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+`Scatter D3` is a way to create interactive scatter plots by using the` d3.js` java script visualization library. The  package provides an HTML widget based on the htmlwidgets package.
+```{r}
+#Premliminaries 
+library(scatterD3)
+library(ggplot2)
+library(TeachingDemos)
+#IF we have time 
+library(networkD3)
+char2seed("Anya Steinhart, Ph.D")
+```
+We will be using the built in package "Iris" by Edgar Anderson. Lets take a look at these data
+```{r}
+# This takes up a lot of room so I am commenting it out
+#print(iris)
+```
+
+This is a pretty large data set. For example's sake, I am going to cut down these data because it produces a less cluttered graph. 
+```{r}
+iris2 <- iris[sample(1:nrow(iris),25),]
+iris2
+```
+Now that that is done, onto making scatter plots!!
+```{r}
+#Creating a basic scatter plot
+#You can pass data arguments as vectors, or as a separate "data" agrument. I prefer the later
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length)
+
+#Adding Y and X axis labels
+scatterD3(data=iris2, x=Petal.Length, xlab="Petal Length", y=Sepal.Length, ylab = "Sepal Length")
+
+#We can also use categorical variables on one the axis
+scatterD3(data=iris2,x=Species,y=Petal.Length)
+
+#you can also alter the margins if the labels are cut
+scatterD3(data=iris2,x=Species,y=Petal.Length, left_margin = 80)
+
+# We can also remove the gear as well if we want 
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, menu=FALSE)
+
+```
+Just by this simple command, we can zoom in and out of the plot, pan the plot by dragging the the mouse, and hover over a point to view the x and y coordinates
+
+We can also add variation to our points
+```{r}
+#Adding variation to our scatter plots
+#Adding color to our graphs
+##You can only use specific HTML colors that are supported by browsers, 
+#Link to compatable colors: https://www.w3schools.com/tags/ref_colornames.asp
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, point_size = 30, point_opacity = 0.75, colors = "RebeccaPurple")
+
+#Changing the hover
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length,point_size = 30, point_opacity = 1, colors = "RebeccaPurple",  hover_size = 50, hover_opacity = 0.75)
+
+#Adding labels to the individual points
+scatterD3(data=iris2,  x=Petal.Length, y=Sepal.Length,point_size = 30, point_opacity = 1, fixed = TRUE, colors = "RebeccaPurple",  hover_size = 6, hover_opacity = 1,lab=Species, labels_size = 9)
+```
+
+We can map variables using symbols, colors, size and opacity of the points
+```{r}
+#Color- Categorical
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, col_var = Species, colors = c("Pink","Plum", "PowderBlue"))
+
+#Continuous 
+scatterD3(data=iris2, x=Petal.Length,  y=Sepal.Length, col_var = Sepal.Width, col_continuous = TRUE) 
+
+#shape, just categorical 
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, symbol_var =Species, col_var=Species)
+
+#Size and opacity can both be used for continuous 
+#Size
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, colors="Plum", size_var =Sepal.Width, 
+size_range = c(10, 100))
+#opacity
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, colors="Plum", opacity_var = Sepal.Length)
+```
+
+Adding axis labels and lines into the graph 
+```{r}
+#Adding lines
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, colors="Plum",  lines = data.frame(slope = 0.44, intercept = 4.12, stroke = "Green", stroke_width = 5))
+
+```
+Add caption 
+```{r}
+#Adding titles and text
+scatterD3(data=iris2, x=Petal.Length, xlab="Petal Length", y=Sepal.Length, ylab = "Sepal Length", col_var = Species, colors = c("Pink","Plum", "PowderBlue"), 
+          caption=list(title="This is my title",
+                       text="This is my text. I do not know what to say here. "))
+#Adding captions to points- this uses java script which I won't pretend to understand but it works
+tooltips <- paste( "This is an iris <I dont know what this means>","</strong><br/>with a", iris$Petal.Width, "inch petal width!")
+scatterD3(data = iris2, x =Petal.Length, y = Sepal.Length, tooltip_text = tooltips)
+```
+
+We can add URLs to the points! Among some other cool stuff
+```{r}
+#Adding URL
+iris2$url <- paste0("https://www.google.com?q=", colnames<-iris2$Species)
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, col_var = Species, colors = c("Pink","Plum", "PowderBlue"),url_var=url)
+
+#Adding a callback, again this uses java script- not showing 
+scatterD3(data = iris2, x = Petal.Length, y = Sepal.Length,
+          click_callback = "function(id, index) {
+         alert('scatterplot ID: ' + id + ' - Point index: ' + index) 
+          }")
+#Adding confident ellipses 
+scatterD3( data=iris2, x=Petal.Length,y=Sepal.Length, col_var = Species, color= c("Pink","Plum", "PowderBlue"), ellipses=TRUE)
+
+#Lasso Plug in 
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, col_var = Species, colors = c("Pink","Plum", "PowderBlue"), lab = Species, lasso=TRUE)
+
+#Lasso Call back using java script
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, col_var = Species, colors = c("Pink","Plum", "PowderBlue"),lab=Species, lasso=TRUE, lasso_callback= "function(sel) {alert(sel.data().map(function(d) {return d.lab}).join('\\n'));}")
+
+```
+
+We can intergrate our points into other graphing packages,like ggplot2!
+```{r}
+scatterD3(data=iris2, x=Petal.Length, y=Sepal.Length, lab=Species)
+labels <- read.csv("irisPoints.csv")
+g1 <- ggplot() + 
+  geom_point(data=iris2, aes(x=Petal.Length, y=Sepal.Length)) + 
+  geom_text(data=labels,
+            aes(x=lab_x,
+                y=lab_y,
+               label=lab))
+print(g1)
+```
+
+###Interested in other interactive graphics using `hmtlwidgets` ? Lets look at the  `networkD3` package
+
+```{r}
+#NetworkD3 creates interactive networks graphics. I am going to show you two. 
+#Simplenetwork graph 
+#We need a source and target
+source <- c("A", "A", "A", "A",
+         "B", "B", "J", "C", "D")
+target <- c("B", "C", "D", "J",
+            "E", "F", "G", "H", "I")
+networkData <- data.frame(source, target)
+#plot
+simpleNetwork(networkData)
+```
+
+We can build other, more complicated graphs as well
+```{r}
+##We can make even more complicated graphics as well
+#Force network graphics 
+#Using the built in data set "misNodes" and "misLinks" 
+#based on characters and their interactions from Les Miserables
+#Load data
+data(MisLinks)
+data(MisNodes)
+#look real fast- also take up a lot of space
+
+#MisNodes
+#MisLinks
+#Plot
+forceNetwork(Links = MisLinks, Nodes = MisNodes,
+            Source = "source", Target = "target",
+             Value = "value", NodeID = "name",
+             Group = "group", opacity = 0.8)
+#We can also build sanky network graphs as well
+sankeyNetwork(Links=MisLinks, Nodes=MisNodes, Source="source",
+              Target ="target", Value="value",
+              NodeID = "name", fontSize = 12, nodeWidth = 25, height=700, width=1000)
+
+```
+
+

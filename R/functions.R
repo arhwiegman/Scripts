@@ -1,124 +1,156 @@
-#Functions for processing Gen5 plate reader colorometric PO4P results
-# Nutrient Cycling and Ecological Design Lab 
-# University of 
-# Author: Adrian Wiegman (adrian.wiegman@uvm.edu)
-# Date Created: 20180320
+# All about functions in R
+# March 1 2018
+# Adrian Wiegman
 
-##################################################################
-#FUNCTION: convert2csv
-#converts "[name].xlsx" to "[name].csv" and prevents from overwriting 
-#existing files named "[name].csv" 
-# input: 
-# xlsxname - a character string "[name].xlsx" with an ms excel filename
-# output: 
-# csvname - a character string "[name].csv" with a csv file name 
-# --------------------------------------------------------------------------
-convert2csv <- function(xlsxname = "exampleData.xlsx"){
-  require(stringr)
-  require(installr)
-  ext <- str_extract(xlsxname,"\\..+")
-  if(ext==".xlsx"){
-    name <- str_sub(xlsxname,start=1,end=nchar(xlsxname)-nchar(ext))
-    csvname <- paste0(name,'.csv')
-    #prevent from overwriting other files while csvname already exists
-    n <- 0
-    while (file.exists(csvname)){
-      n <- n + 1
-      csvname <- paste0(name,'_',n,'.csv')}
-    xlsx2csv(xlsxname,csvname)
-  }else{stop("ERROR: file is not of type '.xlsx'")}
-  return(csvname)
-}
-#convert2csv()
-#########################################################
-#FUNCTION: readPlateLayout
-#input a filename string for .csv outputs from Gen5 plate reader
-# PO4 procedure from the University of Vermont NCED Labratory
-# contacts: Adrian.Wiegman@uvm.edu
-readLayout <- function(filename="exampleData.csv"){
-  require(readr)
-  textlines <-read_lines(file=filename,skip=20,n_max=17)
-  require(stringr)
-  rowNames <- str_sub(textlines[seq(2,length(textlines),2)],start=2,end=2)
-  colNames <- str_extract_all(textlines[1],"[:digit:]+") #REGEX >=1 digit
-  layouttext <- str_sub(textlines[seq(2,length(textlines),2)],
-                    start=4,
-                    end=nchar(textlines[seq(2,length(textlines),2)])
-                    -nchar(',Well ID'))
-  write(layouttext,"data")
-  layout <- read.table("data",sep=',',na.strings = "")
-}
+# everything is a function
+sum(3,2) # a 'prefix' function
+3 + 2 # also a function 
+`+`(3,2) # 'infix function
+#all of the above are equivalent
 
-#########################################################
-#FUNCTION: readLayout
-#desciption:
-#  Reads plate layout for synergy HT 96 well plate 
-#  for the P04P procedure of the nutrient cycling and 
-#  ecological design laboratory
-#inputs:
-#  filename - a character string for a file "[name].csv"
-#             containing Gen5 plate reader outputs 
-#  labeledLayout - TRUE or FALSE, if TRUE the number of rows (rowskp) in filename between "STD1", "STD2" would is set to 3, if FALSE rowskp = 2
-#outputs: 
-#  layout - a an 8x12 data frame object with plot layout
-#----------------------------------------------------------
-readLayout <- function(filename="exampleData.csv",labeledLayout=FALSE){
-  require(readr)
-  require(stringr)
-  if(labeledLayout==FALSE)rowskp=2 
-  if(labeledLayout==TRUE)rowskp=3 
-  textlines <-read_lines(file=filename,skip=20,n_max=1+8*rowskp)
-  print(textlines)
-  rowNames <- str_sub(textlines[seq(2,length(textlines),rowskp)],start=2,end=2)
-  if(',' %in% rowNames)
-    {stop('ERROR: unable to find layout matrix in file please check if labels are present in Gen5 output file and examine your input to the readLayout function')}
-  colNames <- str_extract_all(textlines[1],"[:digit:]+") #REGEX >=1 digit
-  layouttext <- str_sub(textlines[seq(2,length(textlines),rowskp)],
-                        start=4,
-                        end=nchar(textlines[seq(2,length(textlines),rowskp)])
-                        -nchar(',Well ID'))
-  write(layouttext,"data")
-  layout <- read.table("data",sep=',',na.strings = "")
-  return(layout)
-}
-#layout <- readLayout(labeledLayout=TRUE)
-#########################################################
-#FUNCTION: readAdjustedAbsorbance
-#input a filename string for .csv outputs from Gen5 plate reader
-# PO4 procedure from the University of Vermont NCED Labratory
-# contacts: Adrian.Wiegman@uvm.edu
-readAdjustedAbsorbance <- function(filename="exampleData.csv",labeledLayout=FALSE){
-  require(readr)
-  textlines <-read_lines(file=filename,skip=20,n_max=17)
-  require(stringr)
-  rowNames <- str_sub(textlines[seq(2,length(textlines),2)],start=2,end=2)
-  colNames <- str_extract_all(textlines[1],"[:digit:]+") #REGEX >=1 digit
-  layouttext <- str_sub(textlines[seq(2,length(textlines),2)],
-                        start=4,
-                        end=nchar(textlines[seq(2,length(textlines),2)])
-                        -nchar(',Well ID'))
-  write(layouttext,"data")
-  layout <- read.table("data",sep=',',na.strings = "")
-} 
+y<-3
+`<-`(yy,3)
+print(yy)
+print(read.table) #look inside a function
+sum # typing the name gives the contents of the function 
+sum(3,2) #function call with inputs
+sum() # most function will run without inputs
 
-#########################################################
-#FUNCTION: readRawAbsorbance
-#input a filename string for .csv outputs from Gen5 plate reader
-# PO4 procedure from the University of Vermont NCED Labratory
-# contacts: Adrian.Wiegman@uvm.edu
-readRawAbsorbance <- function(filename="exampleData.csv",labeledLayout=FALSE){
-  require(readr)
-  textlines <-read_lines(file=filename,skip=20,n_max=17)
-  require(stringr)
-  rowNames <- str_sub(textlines[seq(2,length(textlines),2)],start=2,end=2)
-  colNames <- str_extract_all(textlines[1],"[:digit:]+") #REGEX >=1 digit
-  layouttext <- str_sub(textlines[seq(2,length(textlines),2)],
-                        start=4,
-                        end=nchar(textlines[seq(2,length(textlines),2)])
-                        -nchar(',Well ID'))
-  write(layouttext,"data")
-  layout <- read.table("data",sep=',',na.strings = "")
-} 
+#anatomy of a user-defined function in R
+functionName <- function (parX='defaultX', #list of parameters
+                          parY='defaultY',
+                          parZ='defaultZ'){ #function body
+  #lines of R code and annotations
+  #may call or create other functions 
+  #may create local variables (contained within memory while function is running)
+  #global variables can also used within the function
+  z <- c('a list or a vector of data constructed by the function',
+         parX,
+         parY,
+         parZ)
+  return(z)
+} #end of function 
+functionName #prints the contents of the function
+functionName()
+functionName(parX=0,parY=c(1,1),parZ='balogna')
+
+#style for functions
+#1. fence of function with prominent comments
+#2. give header + description of function input and output
+#3. use simple names for local variables
+#4. more than ~1 successful code
+
+#####################################################
+#FUNCTION: functionNAME
+# breif description of what the function does
+# input: allele frequency p(0,1)
+# output: p and frequency of AA, AB, BB genotypes
+#---------------------------------------------
+hardyWeinberg <- function(p=runif(1)){
+  q <- 1 - p
+  fAA <- p^2 
+  fAB <- 2*p*q
+  fBB <- q^2
+  vecOut <- signif(c(p=p,AA=fAA,AB=fAB,BB=fBB),digits=3)
+  return(vecOut)
+}
+#END FUNCTION: functionNAME
+#####################################################
+hardyWeinberg()
+hardyWeinberg(p=0.5)
+#P is not a global variable so it is not stored in memory of main program
+
+p <- 0.6 # p Global
+hardyWeinberg(p=p)
+# p(Local) = p(Global)
+
+#####################################################
+#FUNCTION: hardyWeinberg2
+# demonstrates the use of logical control structures
+# input: allele frequency p(0,1)
+# output: p and frequency of AA, AB, BB genotypes
+#---------------------------------------------
+hardyWeinberg2 <- function(p=runif(1)){
+  #if p is greater than 1 OR less than zero exit the function and write a failure message 
+  if (p > 1.0 | p < 0.0) {
+    return('function fails, p out of bounds')
+  }
   
+  q <- 1 - p
+  fAA <- p^2 
+  fAB <- 2*p*q
+  fBB <- q^2
+  vecOut <- signif(c(p=p,AA=fAA,AB=fAB,BB=fBB),digits=3)
+  return(vecOut)
+}
+#END FUNCTION: functionNAME
+#####################################################
+hardyWeinberg2(1.1)
+temp <- hardyWeinberg2(1.1) # passes error message with no warning to console
+temp
+#####################################################
+#FUNCTION: hardyWeinberg3
+# demonstrates the 'stop' control structure
+# input: allele frequency p(0,1)
+# output: p and frequency of AA, AB, BB genotypes
+#---------------------------------------------
+hardyWeinberg3 <- function(p=runif(1)){
+  #if p is greater than 1 OR less than zero exit the function and write a failure message 
+  if (p > 1.0 | p < 0.0) {
+    stop('function fails, p out of bounds') #stop creates a warming message
+  }
+  
+  q <- 1 - p
+  fAA <- p^2 
+  fAB <- 2*p*q
+  fBB <- q^2
+  vecOut <- signif(c(p=p,AA=fAA,AB=fAB,BB=fBB),digits=3)
+  return(vecOut)
+}
+#END FUNCTION: functionNAME
+#####################################################
+hardyWeinberg3(1.1)
+temp1 <- hardyWeinberg3(1.1) # passes error message with no warning to console
+temp1
 
+#understanding  scope of local and global variables
+myFunc <- function (a=3,b=4){
+  z <- a+b
+  return(z)
+}
+myFunc()
+myFuncBad <- function(a=3){
+  z <- a + bbb
+  return(z)
+}
+myFuncBad()
+bbb <- 100
+myFuncBad()
+# FUNCTION LOOKS FOR VARIABLES IN LOCAL ENVIRONMENT FIRST THEN GLOBAL
+# THIS IS BAD CODING FORM
+# ALL VARIABLES USED IN THE FUNCTION SHOULD BE DEFINED LOCALLY AS INPUT PARAMETERS OR AS VARIABLES SPECIFIED WITHIN THE FUNCTION
 
+##################################################
+#FUNCTION: fitLinear
+#fits a linear regression
+#input: numeric vectors of x and y
+#output: slope, inercept, and p value
+#-------------------------------------------------
+fitLinear <- function(x=runif(20),y=runif(20)){
+  myMod <- lm(y~x) #fits model
+  myOut <- c(slope=summary(myMod)$coefficients[2,1],intercept=summary(myMod)$coefficients[1,1],pVal=summary(myMod)$coefficients[2,4])
+  plotVar <- qplot(x=x,y=y,geom=c('smooth','point'))
+  print(plotVar)
+  return(myOut)
+}
+##################################################
+fitLinear()
+
+# dealing with too many parameters
+# by bundlin them up
+z<-c(runif(99),NA)
+mean(z) # need to account for NA
+mean(x=z,na.rm=TRUE) #removes NA
+mean(x=z,na.rm=TRUE,trim=0.05) # trim of the 2.5 and 97.5 percentile
+l <- list(x=z,na.rm=TRUE,trim=0.05)
+do.call(mean,l)

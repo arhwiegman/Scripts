@@ -1,0 +1,221 @@
+---
+title: "HW10"
+author: "Adrian Wiegman"
+date: "March 28, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Methods and Assignment
+The following code defines a function called `FileBuilder` to create files with random x and y variables that are smattered with a certain number of na values. The code then runs a regression on each of the files using a `for` loop. The assignment was to test what was needed to break the `lm` function with this code. To do this a wrapped the 'batch processing loop' with a 'parameter manipulation loop'. In the parameter manipulation loop created a sequence for `j` where j was set equal to `fileNA` parameter of the `FileBuilder` function. `fileNA` is used to set the `lambda` parameter in the `rpois` function which generates an random integer from a distribution with an average of `lambda`. To make the paremeter manipulation loop work it was necessary to embed code to delete the random data and stat summary files after each iteration. I deleted the random data using the `unlink` function. Rather than deleting, the stats summary I used the `formatC` function to create a unit summary file labeled with `j` and stored these outputs in a separate folder.
+
+### Results
+I found that the code broke when `j = 6` and the file that caused the error was number 49 out of 100. At this juncture the `lm` function still worked, however an error was produced when the `regStats` function attemped to define the Slope of from the `summary` of the `lm`. The reason for this error was because the length of the x and y vectors were equal 1. When one x variable is regressed against one y variable, the slope does not exist. When this happens `lm` puts an the NA where the slope should be in the `summary` and does not create row 2 of the coefficients list (`$coefficients[2,1]`) where the slope is normally stored. Example provide below.
+
+```{r}
+# 3 random x and y produces slope and error
+xVar <- runif(3)
+yVar <- runif(3)
+d <- data.frame(xVar,yVar)
+. <- lm(data=d,d[,2]~d[,1]) # column y 
+. <- summary(.)
+.$coefficients
+
+# 2 random x and y produces slope and no error (perfect fit)
+xVar <- runif(3)
+yVar <- runif(3)
+d <- data.frame(xVar,yVar)
+. <- lm(data=d,d[,2]~d[,1]) # column y 
+. <- summary(.)
+.$coefficients
+
+# 1 random x and y produces no slope only an intercept
+xVar <- runif(1)
+yVar <- runif(1)
+d <- data.frame(xVar,yVar)
+. <- lm(data=d,d[,2]~d[,1]) # column y 
+. <- summary(.)
+.$coefficients
+```
+
+### Additional Amendments to Original Code
+I made some edits to the original code. Following task number 5 in the homework I added two columns to the statsOut dataframe containing the number of rows in the raw and clean dataframes. I did this by first declaring the vectors with the length of `fileNames` above the batch processing loop, then by updating the values of element `i` in column `"CLEANnrow"`. 
+
+### The Batch Processing Code
+```
+# Batch Processing in R
+
+#DEFINE FUNCTIONS---------------------------------
+#####################################
+# FUNCITON: FileBuilder
+# create a set of random files for regression
+# input: fileN - number of files to create
+#      : fileFolder - name of folder for files
+#      : fileSize - c(min,max) number of rows in file
+#      : fileNA - number on average of NA per column
+# output: set of random files
+#-----------------------------------
+FileBuilder <- function(fileN=10,
+                        fileFolder="RandomFiles",
+                        fileName = "randomXY",
+                        fileSize=c(15,100),
+                        fileNA=3){
+  for (i in seq_len(fileN)){
+    if(dir.exists(fileFolder)){}else{dir.create(fileFolder)}
+    fileLength <- sample(fileSize[1]:fileSize[2],size=1)
+    varX <- runif(fileLength) #random x values
+    varY <- runif(fileLength) #random y values
+    df <- data.frame(varX,varY) #bind to dataframe
+    badVals <- rpois(n=1,lambda=fileNA) #random poisson gives an integer
+    df[sample(nrow(df),size=badVals),1]<-NA# random sample of a vector in x col
+    df[sample(nrow(df),size=badVals),2]<-NA# y column
+    fileLabel <- paste0(fileFolder,"/",fileName,
+                        formatC(i,width=3,format="d",flag="0"), 
+                        # adds padding of zeros infront of i
+                        ".csv")
+    #set up data file and incorporate time stamp
+    # METADATA using cat()
+    write.table(cat("# Simulated random data file for batch processing \n",
+                    "# timestamp: ", as.character(Sys.time()),"\n",
+                    "# Adrian Wiegman \n",
+                    "# ------------------------------- \n",
+                    file=fileLabel,
+                    row.names="",
+                    col.names="",
+                    sep=""))
+    write.table(x=df,
+                file=fileLabel,
+                sep=",",
+                row.names=FALSE,
+                append=TRUE)
+  }# end for loop 
+  
+}# end function FileBuilder
+#FileBuilder() 
+
+#############################################
+# FUNCTION: regStats
+# fit linear regression model, get stats
+# input: 2 column data frame
+# output: slope,p-value,r2
+#------------------------
+regStats <- function(d=NULL){
+  if(is.null(d)){
+    xVar <- runif(10)
+    yVar <- runif(10)
+    d <- data.frame(xVar,yVar)
+  }
+  . <- lm(data=d,d[,2]~d[,1]) # column y 
+  . <- summary(.)
+  statsList <- list(Slope=.$coefficients[2,1],
+                    pVal=.$coefficients[2,4],
+                    r2=.$r.squared)
+  return(statsList)
+} #end function regStats
+#regStats()
+
+#MAIN PROGRAM-----------------
+#load libaries
+library(TeachingDemos)
+char2seed("Freezing March")
+
+#Manage File Directories
+if(dir.exists("BatchOutput")){
+  #delete all files
+  unlink(paste0(fileFolder,"/",list.files(fileFolder)))
+}else{
+  batcdir.create("BatchOutput")
+} # end if 
+#---------------------------
+#Global Variables
+fileFolder <- "RandomFiles"
+nFiles <- 100
+j <- 3 #average number of NAs
+errorFlag <- 0
+fileOut <- "StatsSummary.csv"
+
+# PARAMETER MANIPULATION LOOP
+#for loop to change parameters in FileBuilder
+for (j in seq(3,30)){
+  cat("for loop... j =",j,"\n")
+  #delete files in randnom files folder
+  #DANGER THESE COMMANDS DELETE ALL FILES IN A SPECIFIED PATH
+  #file.remove(paste0(fileFolder,"/",list.files(fileFolder)))
+  unlink(paste0(fileFolder,"/",list.files(fileFolder)))
+  
+  #create new file for summary stats
+  n <- formatC(j,format="d",width=2,flag="0")
+  fileOut <- paste0("BatchOutput/","StatsSummary",n,".csv")
+  # set up the output file and incorperate time stamp and minimal   emtadata
+  write.table(cat("# Summary stats for ",
+                  "batch processing of regression models","\n",
+                  "# timestamp: ",as.character(Sys.time()),"\n",
+                  "# Adrian Wiegman","\n",
+                  "# ------------------------", "\n",
+                  "\n",
+                  file=fileOut,
+                  row.names="",
+                  col.names="",
+                  sep=""))
+  
+  
+  # create 100 files with j number of NA values on average
+  FileBuilder(fileN=nFiles,fileNA=j)
+  
+  fileNames <- list.files(path=fileFolder)
+  
+  # Create data frame to hold file summary statistics
+  ID <- seq_along(fileNames)
+  fileName <- fileNames
+  slope <- rep(NA,nFiles)
+  pVal <- rep(NA,nFiles)
+  r2 <- rep(NA,nFiles)
+  RAWnrow <- rep(NA,nFiles)
+  CLEANnrow <- rep(NA,nFiles)
+  
+  statsOut <- data.frame(ID,fileName,slope,pVal,r2,RAWnrow,CLEANnrow)
+  # BATCH PROCESSING LOOP
+  # batch process by looping through individual files
+  for (i in seq_along(fileNames)) {
+    cat("for loop... i =",i,"\n")
+    data <- read.csv(file=paste0(fileFolder,"/",fileNames[i]),
+                     comment.char="#") # read in next data file
+    dClean <- data[complete.cases(data),] # get clean cases
+    statsOut[i,"RAWnrow"] <- nrow(data)
+    statsOut[i,"CLEANnrow"] <- nrow(dClean)
+    if (nrow(dClean)==1){
+      cat("# length of cleaned data = 1... \n")
+      err <- paste("# ERRORS \n",
+                   "# unable to perform regression on file",fileName[i],"\n",
+                   "# ------------------------------------\n",sep="")
+      write(err,
+            file=fileOut,
+            append=TRUE)
+      cat("writing outputs to",fileOut,"\n")
+      # now add the data frame
+      write.table(x=statsOut,
+                  file=fileOut,
+                  row.names=FALSE,
+                  col.names=TRUE,
+                  sep=",",
+                  append=TRUE)
+      errorFlag <- 1
+      break("Error in .$coefficients[2, 1] : subscript out of bounds")
+    }# end if
+    . <- regStats(dClean) # pull regression stats from clean 
+    # write output before error stops execution
+    statsOut[i,3:5] <- unlist(.) # unlist, copy into last 3 column
+  } # end for loop for i 
+  cat("writing outputs to",fileOut,"\n")
+  # now add the data frame
+  write.table(x=statsOut,
+              file=fileOut,
+              row.names=FALSE,
+              col.names=TRUE,
+              sep=",",
+              append=TRUE)
+} # end for loop for j 
+```

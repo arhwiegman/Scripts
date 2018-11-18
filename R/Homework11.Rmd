@@ -1,0 +1,289 @@
+---
+title: "Homework 11"
+author: "Adrian Wiegman"
+date: "April 4, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 1. Examine a function useful to your research
+I am examining the Langmuir Equation: 
+
+$$
+S = \frac{S_{max}kC}{1+kC} + S_0
+$$
+
+This model which describes the relation between $S$ (mg kg^-1^), the quantity of phosphorus sorbed to soil and $C$ (mg L^-1^), the concentration of dissolved phosphorus in soil porewater. The model assumes there is a limited capacity of the soils to adsorb sediment resulting in a maximum quantity of sorbed soil phosphorus, $S_{max}$ (mg kg^-1^). $S_{min}$ is the amount of P sorbed to the soil at when $C$ is neglibable The physical soil properties (such as grain size) and biogeochemical regulators (such as pH, eH, tempurature, and OM) affect $S_{max}$ and $S_{min}$; The concentration Al and Fe in soil is a very strong predictor of $S_{max}$. $k$ (L mg^-1^), is a coefficient that describes the energy of adsorbtion, which has low variability and is often assumed constant (Reddy & DeLaune 2011; Reddy et al. 1999). 
+
+Below I examine the effects of changing $S_{max}$ and $k$ in the Langmuir equation, by iteratavely changing values in a `while` loop, and plot constructing a `data.frame` of the model to plot the results with `ggplot`. 
+
+```{R}
+#########################################################
+# FUNCTION: Langmuir
+# half saturation equation for sediment P concentration
+# as a function of dissolved P concentration determined 
+# during sorption isotherm experiments with soil cores.
+# INPUT: C - (mg L^-1) concentration of dissolve P in soil porewater
+#        k - (L mg^-1) adsorption energy coefficient
+#        Sm - (mg kg^-1) maximum soil p concentration 
+#        So - (mg kg^-1) minimum soil p concentration 
+# OUTPUT: S - vector
+#-------------------------------------------------------
+Langmuir <- function(C=NULL,
+                     k=0.5,
+                     Sm=1,
+                     So=0.01){
+  if (is.null(C)) C <- c(0.02,
+                         0.04*1.9^1:10,
+                         seq(0.01,10,length.out=5))
+  S <- (Sm*k*C)/(1+k*C) + So
+return(S)
+}
+Langmuir()
+
+###################################################
+# FUNCTION: LangmuirPlot
+# half saturation equation for sediment P concentration
+# as a function of dissolved P concentration determined 
+# during sorption isotherm experiments with soil cores.
+# INPUT: C - (mg L^-1) concentration of dissolve P in soil porewater
+#        k - (L mg^-1) adsorption energy coefficient
+#        Sm - (mg kg^-1) maximum soil p concentration 
+#        So - (mg kg^-1) minimum soil p concentration 
+# OUTPUT: ggplot of langmuir equation
+#-------------------------------------------------
+LangmuirPlot <- function(C=NULL,
+                         k=0.5,
+                         Sm=1,
+                         So=0.1,
+                         Labels=FALSE,
+                         xnum='t',
+                         ynum='t'){
+  if (is.null(C)) C <- 0.1:10
+  if (Labels==TRUE){
+    lb <- c("S - Sorbed P (mg/kg)",
+           "C - Dissolved P Conc. (mg/L)")
+    a <- TRUE
+    }else{
+             lb <- c(NULL,NULL)
+             a <- FALSE
+             
+           }
+  S<-Langmuir(C,k,Sm,So)
+  plot(x=C,y=S,type="l",
+       ylim=c(0,10),xlim=c(0,10),
+       xlab=lb[2],ylab=lb[1],
+       ann=a,yaxt = ynum, xaxt = xnum)
+  mtext(paste("Sm =", Sm," So =",So," k =",k),cex=0.7)
+}
+LangmuirPlot()
+
+#pdf("arrayplot_HW11.pdf") # open pdf, comment out for knit
+# loop to make plot matrix 
+n <- 3 # number 
+# set up plot array with title margin 'oma' and set the title to outer.   
+par(mfrow=c(n,n),oma=c(2,2,3,0))
+i = 0
+for (Sm in seq(1,5,length.out = n)){
+  i = i + 1
+  j = 0
+  for (k in seq(0.1,2,length.out = n)){
+    j = j + 1
+    # call lagmuir plot and remove axis labels of inner matrix
+    LangmuirPlot(k=k,Sm=Sm,Labels=FALSE,
+                 ynum=(if(j==1)'t'else'n'),# remove inner y axis values
+                 xnum=(if(i==3)'t'else'n'))# remove inner x axis values
+  }
+}
+title(main="Langmuir Sensitivity Plot: \n S = (Sm*k*C)/(1+k*C) + So ",outer=TRUE)
+mtext("S - Sorbed P (mg/kg)",side=2,outer=TRUE) # Y axis
+mtext("C - Dissolved P Conc. (mg/L)",side=1,outer=TRUE) # X axis
+# save plot to pdf
+
+#dev.off() # close pdf, comment out for knit
+```
+
+### 2. Conduct a randomization test for some of your own data and ensure the test is repeatable by setting the randomization seed
+
+For this exercise I will use data from laboratory extraction of phosphorus `Y` using two different methods (`X2=A` and `X2=B`) verses Total Phosphorus (`X1`), and I will compare the slopes of the phosphorus extracted phosphorus from method A and method B. I am testing the null hypthosis that difference in slopes is equal to zero. This is a small sample size, n=6 for each method. So assumptions of normality with respect to Y and repect to model residuals may be vialated. Therefore a randomization test or nonparametric approach may be better suited to test the null hypothesis. Results are plotted below.
+
+```{R}
+# get metric
+##############################################
+# get.pctdiff.slopes
+# returns percent difference in regression slopes
+# from two x,y dataframes being compared
+get.pctdiff.slopes <- function (z=NULL){
+  if (is.null(z)){
+   z <- data.frame(Y=runif(10),
+                     X1=1:10,
+                     X2=rep(c('A','B'),5))
+  }
+  # Y = b0 + b1*X1 + b2*X2B + b3*X1*X2B
+  . <- lm(Y~X1*X2,z)
+  # slope of x2 A
+  s1 <-.$coefficients[2]
+  # slope of x2 B
+  s2 <-.$coefficients[4] + s1
+  pds <- (s2-s1)/s1
+  #pds <- abs(s2-s1) diff gives same result P value as pct diff
+  return(pds)
+}
+get.pctdiff.slopes()
+
+######################################################
+# FUNCTION: shuffleData
+# randomize the position of x and y values
+# input: 3+ colunm data frame for regression (ID, yVar, xVar, x etc..)
+# output: 3+ column data frame 
+#----------------------------------------------------------
+shuffleData <- function(z=NULL){
+  if(is.null(z)){
+    xVar <- 1:20
+    yVar <- xVar + 10*rnorm(20)
+    z <- data.frame(ID=seq_along(xVar),yVar,xVar)
+  }
+  z[,2] <- sample(z[,2])
+  z[,3] <- sample(z[,3])
+  return(z)
+}
+shuffleData()
+
+###########################################################
+# FUNCTION: getPVal
+# calculate p value for observed, simulated data
+# input: list containing observed metric and vector of simulated data
+# output: lower, upper tail probability
+#----------------------------------------------------------
+getPVal <- function(z=NULL){
+  if(is.null(z)){
+    z <- list(xObs=runif(1),xSim=runif(1000))
+  } #end if
+  pLower <- mean(z[[2]]<=z[[1]]) #the mean of a boolean vector returns proportion true
+  pUpper <- mean(z[[2]]>=z[[1]])
+  return(c(pL=pLower,pU=pUpper))
+}
+getPVal()
+
+###########################################################
+# FUNCTION: plotRanTest
+# ggplot graph 
+# input: list containing observed metric and vector of simulated metrix 
+# output: ggplot graph
+#----------------------------------------------------------
+plotRanTest<- function(z=NULL){
+  require(ggplot2)
+  if(is.null(z)){
+    z <- list(xObs=runif(1),xSim=runif(1000))
+  } #end if
+  df <- data.frame(ID=seq_along(z[[2]]),simX=z[[2]])
+  p1 <- ggplot(data=df,mapping=aes(x=simX))
+  p1 + geom_histogram(mapping=aes(fill=I("goldenrod"),color=I("black"))) + geom_vline(aes(xintercept=z[[1]],col="blue"))
+}
+plotRanTest()
+
+# MAIN PROGRAM----------------------------------
+set.seed(10235)
+#global variables
+nSim <- 1000
+Xsim <- rep(NA,nSim) # will hold simulated slopes
+
+# Raw Data in 'wide' format
+YA <- c(1659,649,650,377,1825,1924)
+YB <- c(965,1855,1972,493,2081,1439)
+#YC <- c(3172,6090,5888,4348,13874,9348)
+X <- c(4900,6800,6700,5700,13700,10500)
+ID <- seq_along(X)
+# Convert data into 'long' format
+X1 <- rep(X,2) 
+X2 <- c(rep("A",6),rep("B",6))
+Y <- c(YA,YB)
+# Make data frame with 'long' format data
+df <- data.frame(ID=ID,Y=Y,X1=X1,X2=X2)
+
+# randomization test siginificance of model parameter
+Xobs <- get.pctdiff.slopes(df)
+
+for (i in seq_len(nSim)){
+  Xsim[i] <- get.pctdiff.slopes(shuffleData(df))
+}
+
+slopes <- list(Xobs,Xsim)
+
+test1 <- getPVal(slopes)
+plotRanTest(slopes)
+```
+
+### 3. Compare the results of the randomization test with the results a standard statistical test used in R 
+
+The conventional statistic I am using is the type II sum of squares for the model term X1:X2 which adjusts the slope for the based on the value of X2B, if this parameter is significant p < alpha then the slopes are significantly different. The results and interpretation between the test statistic from the randomization test on difference between slopes and and the type II sum of squares for the X1:X2 interaction are given below as a console print out.
+```{r}
+#####################################################
+# nonparm.slopes.test()
+# get p value for comparison of slopes of categorical variables in multiple regression or analysis of covariance model using non-parametric lsmeans method
+#
+nonparm.slopes.test <- function (z=NULL){
+  if (is.null(z)){
+    z <- data.frame(Y=runif(10),
+                     X1=1:10,
+                     X2=rep(c('A','B'),5))
+  }
+  if (!require("lsmeans")) install.packages("lsmeans")
+  # Compare slopes using lsmeans package
+  # get slopes and confidence intervals
+  . <- lm(Y~X1*X2,data=z)
+  . <- lsmeans::lstrends(., "X2", var="X1")
+  # Compare slopes and generate p-value for comparisons
+  . <- pairs(.)
+  . <- summary(.)
+  p <- .$p.value
+  names(p) <- .$contrast
+  return(p)
+}
+nonparm.slopes.test()
+
+# ####################################################
+# # FAILING BUILD for R 3.5, works for R 3.4 and below
+# # tII.slopes.test()
+# # get p value for comparison of slopes of categorical variables in multiple regression or analysis of covariance model using type II sum of squares method from 'car' package
+# 
+# tII.slopes.test <- function (z=NULL){
+#   if (is.null(z)){
+#     z <- data.frame(Y=runif(10),
+#                      X1=1:10,
+#                      X2=rep(c('A','B'),5))
+#   }
+#   # cars packages not working on R3.5 due to failing data.table build as of 20180501, Need to run on R 3.4
+#   if (!require('data.table')) install.packages('data.table')
+#   if (!require('car')) install.packages('car')
+#   # get type II sum of sq for lm of data
+#   . <- car::Anova(lm(Y~X1*X2,data=z),type="II")
+#   p <- .[[4]][3] # get p val for X1:X2 interation
+#   names(p) <- 'X1:X2'
+#   return(p)
+# }
+# tII.slopes.test()
+
+
+# MAIN PROGRAM --------------------------------
+
+# probability the difference in slopes is not different from zero 
+# from lsmeans method pairwise comparison method
+# t2 <- tII.slopes.test(df)
+t2 <- c('X1:X2'=0.863664)
+t3 <- nonparm.slopes.test(df)
+t3 - t2 # t2 and t3 return same P value
+names(t3) <- "type II SS test p on X1:X2"
+# randomization test method
+# probability the difference in slopes is not different from zero 
+# calc. central tendancy of data: uppertail - lowertail
+t1 <- test1[1] - test1[2] 
+names(t1) <- "randomization test p on X1:X2"
+# print results
+cat('RESULTS: \n',names(t1), ':\n',t1,'\n',names(t3),':\n',t3)
+# print interpretation of results
+cat('INTERPRETATION: \n The implication of this result is that the \n randomization test (ph0t1) is more conservative in estimating significant \n differences that the and the type II sum of square of anova or lsmeans \n non-parametric pairwise comparison (ph0t2). The randomization test indicates \n a 46% probability that a random sample of this data results in a zero \n difference in slopes of factor A and factor B, while type II SS indicates \n an 86% probability that the true mean of slopes of factor A and B are not \n different. Both p-values are high enough to accept the null hypothesis of \n zero difference in slopes assuming the lowest acceptable threshold for \n alpha of 0.1.')
+```
