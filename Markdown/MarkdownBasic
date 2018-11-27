@@ -1,0 +1,34 @@
+# Markdown
+Monday, 26. November 2018 11:27AM
+ 
+This is a sentence _italic_ __bold__
+- apple 
+- bananna 
+- orange
+
+1. apple 
+	- macintosh
+	- granny smith
+2. Banannas 
+
+Link recognition
+webpage.net
+[link](google.com)
+
+## Code fences
+
+	import pandas as pd
+	s = "this a code block"
+	for i in s:
+		print(i)
+
+~~~python
+import pandas
+s = "this a code block"
+~~~
+
+~~~fortran
+DO i = 1,30
+	write(*,*) i
+END DO
+~~~
