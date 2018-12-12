@@ -1,0 +1,5 @@
+# this cron job runs on minute zero of every seventh hour of every day
+15 7 * * * bash /home/adrian/Documents/Scripts/bash/get_usgs_stage.py
+
+
+

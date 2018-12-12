@@ -1,0 +1,1 @@
+0 * * * * 'this cron job runs on minute zero of every hour'

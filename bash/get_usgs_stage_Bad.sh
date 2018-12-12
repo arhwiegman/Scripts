@@ -1,0 +1,17 @@
+#!/bin/bash
+CURRENT= date +%Y-%m-%d
+echo $CURRENT
+CURRENTMINUS24HRS= expr $CURRENT - (24*60*60)
+PRIOR= date -d@`CURRENTMINUS24HRS`
+#array
+STATIONS[0]= 04282000 #RUTLAND
+STATIONS[1]= 04282500 #MIDDLEBURRY
+STATIONS[2]= 02494500 #LAKE CHAMPLAIN ECHO
+echo $STATIONS
+STATION= STATION[0]
+WEBPAGE= https://waterdata.usgs.gov/nwis/uv?cb_00060=on&cb_00065=on&format=rdb&
+WEBPAGECMD= '$WEBPAGE&site_no=$STATION&period=&begin_date=$PRIOR&end_date=$CURRENT'
+echo $WEBPAGECMD
+CONTENT=$(wget WEBPAGE -q -O -)
+echo $CONTENT
+
